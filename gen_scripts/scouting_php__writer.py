@@ -10,9 +10,9 @@ def _post_msg(io, post_type, table, querylist=set()):
 
 	# Define the variables that we will be using
 	for col in filter(lambda x: x not in ['id','timestamp','invalid'], columns.keys()):
-		io.write("\t\t${0} = mysql_real_escape_string(stripslashes(trim($_POST['{0}'])));\n".format(col))
+		io.write("\t\t${0} = mysqli_real_escape_string($link,stripslashes(trim($_POST['{0}'])));\n".format(col))
 
-	io.write('\n\t\t$result = mysql_query("SELECT id FROM {0}'.format(table.name))
+	io.write('\n\t\t$result = mysqli_query($link,"SELECT id FROM {0}'.format(table.name))
 	if querylist:
 		itr = iter(querylist)
 		io.write(' WHERE {0}=" . ${0}'.format(next(itr)) )
@@ -21,10 +21,10 @@ def _post_msg(io, post_type, table, querylist=set()):
 
 	io.write(
 r'''
-		$row = mysql_fetch_array($result);
+		$row = mysqli_fetch_array($result);
 		$match_row_id = $row["id"];
 
-		if (mysql_num_rows($result) == 0) {
+		if (mysqli_num_rows($result) == 0) {
 
 ''')
 
@@ -40,7 +40,7 @@ r'''
 		else:
 			io.write('{}. ${} . ","\n'.format('\t\t\t\t', col.name))
 
-	io.write('\n\t\t\t$success = mysql_query($query);\n\t\t}\n')
+	io.write('\n\t\t\t$success = mysqli_query($link,$query);\n\t\t}\n')
 
 	io.write('\t\telse {{\n\t\t\t$query = "UPDATE {} SET "\n'.format(table.name))
 
@@ -54,18 +54,18 @@ r'''
 			io.write( '\t\t\t\t. "{0}=" . ${0} . ","\n'.format(col.name) )
 
 	io.write('\t\t\t\t. " WHERE id=" . $match_row_id;\n\n')
-	io.write('\t\t\t$success = mysql_query($query);\n\t\t}\n')
+	io.write('\t\t\t$success = mysqli_query($link,$query);\n\t\t}\n')
 
 	io.write('\t\tif ($success) {\n')
 
-	io.write('\t\t\t$result = mysql_query("SELECT id, timestamp FROM {0}'.format(table.name))
+	io.write('\t\t\t$result = mysqli_query($link,"SELECT id, timestamp FROM {0}'.format(table.name))
 	if querylist:
 		itr = iter(querylist)
 		io.write(' WHERE {0}=" . ${0}'.format(next(itr)) )
 		for col in itr: io.write(' . " AND {0}=" . ${0}'.format(col))
 	io.write(');\n')
 
-	io.write('\t\t\t$row = mysql_fetch_array($result);\n')
+	io.write('\t\t\t$row = mysqli_fetch_array($result);\n')
 	io.write('\t\t\t$resp = $row["id"] . "," . strtotime($row["timestamp"]);\n')
 
 	io.write('\t\t} else {\n')
@@ -121,7 +121,7 @@ function genJSON($sql_result, $tablename) {
 
 	$firstrow = true;
 
-	while($row = mysql_fetch_array($sql_result, 1)) {
+	while($row = mysqli_fetch_array($sql_result, 1)) {
 		if ($firstrow == false) {
 			$json .= ",";
 		}
@@ -142,16 +142,16 @@ function genJSON($sql_result, $tablename) {
 			$cell = str_replace("\r", "\\r", $cell);
 			$cell = str_replace("\t", "\\t", $cell);
 
-			$col_name = mysql_field_name($sql_result, $i);
-			$col_type = mysql_fetch_field($sql_result, $i);
+			$col_name = mysqli_field_name($sql_result, $i);
+			$col_type = mysqli_fetch_field($sql_result);
 
 			$json .= '"' . $col_name . '":' ;
 
 			//echo $col_name . ": " . $col_type->type . "\n";
-			if ($col_type->type == 'timestamp') {
+			if ($col_type->type == 7) {
 				$json .= strtotime($cell);
 			}
-			elseif ($col_type->numeric == 1 ) {
+			elseif ($col_type->type <= 5 || $col_type->type == 246 ) {
 				$json .= $cell;
 			} else {
 				$json .= '"' . $cell . '"';
@@ -209,9 +209,9 @@ elseif ($_POST['password'] == $pass) {
 r'''
 		//{0}
 		$query = "SELECT * FROM {0}" . $suffix;
-		$result = mysql_query($query);
+		$result = mysqli_query($link,$query);
 		$json .= genJSON($result, "{0}") . "{1}";
-		mysql_free_result($result);
+		mysqli_free_result($result);
 '''.format(tablename, sep))
 
 	io.write(
