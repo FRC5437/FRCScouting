@@ -6,11 +6,13 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 public class ScoutingDBHelper extends SQLiteOpenHelper {
 	
-	public static final int DATABASE_VERSION = 20174;
+	public static final int DATABASE_VERSION = 20175;
 	public static final String DATABASE_NAME = "FRCscouting.db";
 	
 	private static ScoutingDBHelper helper;
 	public static final Object lock = new Object();
+
+	private static final String upgrade20174to20175 = "ALTER TABLE scout_pit_data_2017 ADD COLUMN robot_gross_weight_lbs unsigned int(4) NOT NULL DEFAULT 0;";
 	
 	public ScoutingDBHelper(Context context) {
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -25,12 +27,21 @@ public class ScoutingDBHelper extends SQLiteOpenHelper {
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-		for (int i = 0; i<FRCScoutingContract.SQL_DELETE_ENTRIES.length; i++)
-			db.execSQL(FRCScoutingContract.SQL_DELETE_ENTRIES[i]);
-		onCreate(db);
+		if (oldVersion < 20174) {
+			for (int i = 0; i < FRCScoutingContract.SQL_DELETE_ENTRIES.length; i++)
+				db.execSQL(FRCScoutingContract.SQL_DELETE_ENTRIES[i]);
+			onCreate(db);
+		} else {
+			switch (oldVersion) {
+				case 20174:
+				    db.execSQL(upgrade20174to20175);
+                default:
+                    break;
+			}
+			DBActivity.dbUpdated();
+		}
 	}
-	
-	
+
 	public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 		onUpgrade(db, oldVersion, newVersion);
 	}
