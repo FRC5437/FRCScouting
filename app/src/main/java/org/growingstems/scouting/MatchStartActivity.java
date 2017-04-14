@@ -26,6 +26,7 @@ import org.sigmond.net.PicRequestInfo;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -199,18 +200,13 @@ public class MatchStartActivity extends DBActivity implements PicCallback {
         if (!position.getText().toString().contains("Pilot")) {
             teamNum.setText(schedule.getTeam(matchNum, position.getText()
                     .toString(), this, def));
-            if (Prefs.getRobotPicPref(getApplicationContext(), false)) {
-                loadPicture();
-            }
+            loadPicture();
         }
     }
 
     private class PictureClickListener implements OnClickListener {
 
         public void onClick(View v) {
-            pd = ProgressDialog.show(MatchStartActivity.this, "Busy",
-                    "Retrieving Team Robot Photo", false);
-            pd.setCancelable(true);
             loadPicture();
         }
 
@@ -222,18 +218,11 @@ public class MatchStartActivity extends DBActivity implements PicCallback {
                 pd.dismiss();
             return;
         }
-        String pictureURL = db.getPictureURL(Integer.valueOf(teamNum.getText()
-                .toString()));
-        if (pictureURL.length() < 5) {
-            if (pd != null)
-                pd.dismiss();
-            robotPic.setImageResource(R.drawable.robot);
-            return;
-        }
-        PicRequestInfo info = new PicRequestInfo(pictureURL,
-                MatchStartActivity.this);
-        AsyncPictureRequest req = new AsyncPictureRequest();
-        req.execute(info);
+
+        String teamNumberString = "frc" + teamNum.getText().toString();
+        Context context = robotPic.getContext();
+        int id = context.getResources().getIdentifier(teamNumberString, "drawable", context.getPackageName());
+        robotPic.setImageResource(id);
     }
 
     public void onFinished(Drawable drawable) {
