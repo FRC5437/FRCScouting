@@ -54,11 +54,13 @@ public class DataActivity extends DBActivity implements ActionBar.TabListener,
 
 	protected enum DataType {
 		dt_Default, dt_Event, dt_Team
-	};
+	}
 
 	protected DataType dataType = DataType.dt_Default;
 	protected String eventName = null;
 	protected int teamNum = -1;
+
+	protected boolean isDisplayed = false;
 
 	protected static final int[] DEFAULT_TABS = { DataFragment.PT_EVENTS,
 			DataFragment.PT_TEAMS };
@@ -85,6 +87,7 @@ public class DataActivity extends DBActivity implements ActionBar.TabListener,
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+        isDisplayed = true;
 		m_callback = new ServiceWatcher();
 		setContentView(R.layout.activity_data);
 		Intent intent = getIntent();
@@ -149,10 +152,21 @@ public class DataActivity extends DBActivity implements ActionBar.TabListener,
 	}
 
 	@Override
+	protected void onPause() {
+        super.onPause();
+        isDisplayed = false;
+    }
+
+	@Override
 	protected void onResume() {
 		super.onResume();
+        isDisplayed = true;
 		reloadData();
 	}
+
+    public boolean isDisplayed() {
+        return isDisplayed;
+    }
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
